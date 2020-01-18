@@ -1,0 +1,93 @@
+#! /bin/sh
+#
+
+data=data
+fig=fig
+
+supswigp< $data/chen_small_endian.su \
+ f1=0.0 d1=0.004 d1num=0.2 n1tic=2 x1beg=0.1 x1end=0.9 f1num= \
+ f2=1 d2=1 f2num= x2beg=1 d2num=5 n2tic=2 \
+ clip=25 \
+ style= \
+ label1="Time (s)" label2="Trace number" labelsize=16\
+ wbox=5.0 hbox=3.0 \
+> $fig/chen.eps
+#gv $fig/chen.eps &
+
+#exit 0
+
+l=1
+niter=9
+./crg_REFINV_BP_GPU <$data/chen_small_endian.su\
+      wfile=$data/wavelet_chen_small_endian.su\
+      in_norm=1 out_norm=1 MOF=1\
+      CGAccuracy= delta= MaxBPIter=$niter\
+      out_norm= N=\
+      lamda=$l\
+>$data/ref_BP_chen.su
+
+supswigp< $data/ref_BP_chen.su \
+ f1=0.0 d1=0.004 d1num=0.2 n1tic=2 x1beg=0.1 x1end=0.9 f1num= \
+ f2=1 d2=1 f2num= x2beg=1 d2num=5 n2tic=2 \
+ clip=0.3 \
+ style= \
+ label1="Time (s)" label2="Trace number" labelsize=16\
+ wbox=5.0 hbox=3.0 \
+> $fig/ref_BP_chen.eps
+
+gv $fig/ref_BP_chen.eps &
+
+exit 0
+
+echo 'Synthetic Comparison'
+
+tshift=13
+rm $data/ssyn1.su
+rm $data/norm_model.su
+./normalize<$data/chen_small_endian.su norm=max > $data/norm_model.su
+suwind < $data/norm_model.su j=1 |
+sugain tpow= |
+supswigp \
+    f1=0 d1=0.004 x1beg=0.1 x1end=0.9 d1num=0.2 f1num=0.0 n1tic=2\
+    f2=1 d2=1 x2beg=1 x2end= d2num=20 f2num= n2tic=2\
+    clip= perc=\
+    style= wbox=5.0 hbox=2.0 labelsize=16 \
+    label1="Time (s)" label2="Trace number" \
+>$fig/norm_model.eps
+#gv $fig/norm_model.eps &
+#exit 0
+./conv<$data/ref_BP_chen.su \
+file=$data/wavelet_chen_small_endian.su Shift=$tshift mode=time\
+>$data/nvel-ssyn1.su
+#exit 0
+./normalize<$data/nvel-ssyn1.su norm=max \
+>$data/nvel-norm1.su
+suwind < $data/nvel-norm1.su j=1 |
+sugain tpow= |
+supswigp \
+    f1=0 d1=0.004 x1beg=0.1 x1end=0.9 d1num=0.2 f1num=0.0 n1tic=2\
+    f2=1 d2=1 x2beg= x2end= d2num=20 f2num= n2tic=2\
+    clip= perc=\
+    style= wbox=5.0 hbox=2.0 labelsize=16 \
+    label1="Time (s)" label2="Trace number" \
+>$fig/nvel-norm1.eps
+gv $fig/nvel-norm1.eps &
+#exit 0
+crgdiff < $data/norm_model.su \
+file=$data/nvel-norm1.su \
+cdpmin=1 cdpmax=60 tmin=0.1 tmax=0.9 \
+>$data/nvel-sdiff1.su
+#exit 0
+suwind < $data/nvel-sdiff1.su j=1 |
+supswigp \
+    f1=0 d1=0.004 x1beg=0.1 x1end=0.9 d1num=0.2 f1num=0.0 n1tic=2\
+    f2=1 d2=1 x2beg=1 x2end= d2num=20 f2num= n2tic=2\
+    clip= perc=\
+    style= wbox=5.0 hbox=2.0 labelsize=16 \
+    label1="Time (s)" label2="Trace number" \
+>$fig/nvel-sdiff.eps
+gv $fig/nvel-sdiff.eps &
+exit 0
+
+
+exit
